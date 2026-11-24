@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff1f8">
+<title>ZChat</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6ec4'/%3E%3Cstop offset='1' stop-color='%237873f5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M8 8h48v11L24 45h32v11H8V45l32-26H8z'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{font-family:'Poppins',system-ui,sans-serif;color:#2d2a4a;background:#fff1f8;--ink:#2d2a4a;--muted:#6b6890;--p1:#ff6ec4;--p2:#7873f5;--line:#e3e1fb}
+  *{box-sizing:border-box}
+  body{min-height:100vh;min-height:100dvh;margin:0;display:flex;flex-direction:column;background:linear-gradient(160deg,#fff1f8 0%,#eef2ff 55%,#e6fbff 100%) fixed}
+  header{height:60px;padding:0 24px;display:flex;align-items:center;background:#ffffffd9;backdrop-filter:blur(8px);box-shadow:0 2px 14px #7873f526}
+  .brand{font-size:22px;font-weight:700;text-decoration:none;background:linear-gradient(90deg,var(--p1),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  main{width:100%;flex:1;padding:28px 20px;display:flex;justify-content:center;align-items:center}
+  .panel{width:100%;max-width:440px;padding:28px;background:#ffffffdf;border:1px solid #fff;border-radius:22px;box-shadow:0 10px 34px #7873f524}
+  .panel.wide{max-width:1000px}
+  h1,h2,h3,p{margin-top:0}
+  h1{margin-bottom:8px;font-size:30px}
+  h2{margin-bottom:8px}
+  h3{margin-bottom:10px}
+  .gradient-text{background:linear-gradient(90deg,var(--p1),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .muted{color:var(--muted)}
+  .center{text-align:center}
+  .small{font-size:13px}
+  label{display:block;margin:14px 0 6px;font-size:13px;font-weight:600}
+  input{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit;outline:none}
+  input:focus{border-color:var(--p2)}
+  button{border:0;border-radius:999px;padding:11px 20px;color:#fff;font:600 15px 'Poppins',system-ui,sans-serif;background:linear-gradient(90deg,var(--p1),var(--p2));box-shadow:0 4px 14px #7873f540;cursor:pointer;transition:transform .15s}
+  button:hover{transform:translateY(-1px)}
+  button:disabled{opacity:.55;cursor:wait;transform:none}
+  button.secondary{background:#fff;color:var(--ink);box-shadow:0 2px 8px #7873f526;border:1px solid var(--line)}
+  button.quiet{background:#6b6890}
+  button.danger{background:#e11d48}
+  .full{width:100%;margin-top:18px}
+  .switch{margin:18px 0 0;text-align:center;font-size:14px}
+  a{color:var(--p2)}
+  .message{min-height:20px;margin:12px 0 0;font-size:13px}
+  .message.error{color:#e11d48}
+  .message.success{color:#15803d}
+  .room-card{padding:20px;background:#fff;border-radius:18px;box-shadow:0 6px 20px #7873f524}
+  .room-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:22px}
+  .room-id{margin:14px 0;font-size:28px;font-weight:700;letter-spacing:4px;text-align:center}
+  .call-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .call-top h2{margin:0}
+  .spacer{flex:1}
+  .call-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:16px}
+  .videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-content:start}
+  .tile{position:relative;overflow:hidden;aspect-ratio:4/3;border-radius:16px;background:#1e1b4b}
+  .tile video{width:100%;height:100%;object-fit:cover}
+  .tile-name{position:absolute;left:10px;bottom:8px;color:#fff;font-size:12px;font-weight:600;text-shadow:0 1px 4px #000}
+  .tile-controls{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+  .tile-controls button{width:36px;height:36px;padding:0;background:#0009;box-shadow:none}
+  .chatlog{height:230px;overflow-y:auto;padding:12px;background:#fafaff;border:1px solid var(--line);border-radius:14px;overflow-wrap:anywhere}
+  .chatlog p{margin:4px 0;font-size:13px}
+  .chat-form{display:flex;gap:8px;margin-top:10px}
+  .chat-form input{min-width:0}
+  .chat-form button{flex:none}
+  .participants{margin-bottom:14px;font-size:13px;overflow-wrap:anywhere}
+  footer{padding:18px 12px 22px;text-align:center;color:var(--muted);font-size:13px}
+  @media(max-width:700px){main{padding:18px 12px;align-items:flex-start}.panel{padding:22px 18px}.call-grid{grid-template-columns:1fr}.videos{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.room-id{font-size:24px}}
+</style>
+</head>
+<body>
+<header><a class="brand" href="./ZChat.html">▶ ZChat</a></header>
+<main><div id="app" class="panel"><p class="muted center">Loading ZChat…</p></div></main>
+<footer>ZTube Industries</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://ejwcxwzxlekoutknngtz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_b_XTX9vAZkQoW8TfafjMgQ_vn-nR0Ye';
+const app = document.getElementById('app');
+const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[char]));
+const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+let sb, user, roomCleanup = () => {};
+
+function displayName() {
+  return user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'ZChat user';
+}
+
+function setMessage(text, kind = 'error') {
+  const message = document.getElementById('message');
+  if (!message) return;
+  message.textContent = text;
+  message.className = `message ${kind}`;
+}
+
+function showAuth(mode = 'signin', message = '') {
+  roomCleanup();
+  roomCleanup = () => {};
+  const isSignup = mode === 'signup';
+  app.className = 'panel';
+  app.innerHTML = `<div class="center">
+      <h1 class="gradient-text">📹 ZChat</h1>
+      <p class="muted">${isSignup ? 'Create your free account' : 'Sign in to start or join a call'}</p>
+    </div>
+    <form id="auth-form">
+      ${isSignup ? '<label for="display-name">Name</label><input id="display-name" name="name" autocomplete="name" maxlength="60" required placeholder="Your name">' : ''}
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" minlength="6" required placeholder="At least 6 characters">
+      <button class="full" id="auth-submit" type="submit">${isSignup ? 'Create free account' : 'Sign in'}</button>
+    </form>
+    <p id="message" class="message ${message ? 'error' : ''}" role="status">${esc(message)}</p>
+    <p class="switch">${isSignup
+      ? 'Already have an account? <a href="#" id="switch-auth">Sign in</a>'
+      : 'New to ZChat? <a href="#" id="switch-auth">Create a free account</a>'}</p>
+    <p class="center muted small">Free to use. No payment required.</p>`;
+  document.getElementById('switch-auth').onclick = event => {
+    event.preventDefault();
+    showAuth(isSignup ? 'signin' : 'signup');
+  };
+  document.getElementById('auth-form').onsubmit = async event => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get('email')).trim();
+    const password = String(form.get('password'));
+    const submit = document.getElementById('auth-submit');
+    submit.disabled = true;
+    setMessage(isSignup ? 'Creating your account…' : 'Signing in…', 'success');
+    try {
+      if (isSignup) {
+        const name = String(form.get('name')).trim();
+        if (!name) {
+          setMessage('Enter your name.');
+          submit.disabled = false;
+          return;
+        }
+        const { data, error } = await sb.auth.signUp({
+          email,
+          password,
+          options: { data: { display_name: name } }
+        });
+        if (error) throw error;
+        if (!data.session) {
+          setMessage('Account created. Email confirmation is enabled for this Supabase project; turn it off in Supabase Auth settings to allow sign-in without verification.');
+          submit.disabled = false;
+          return;
+        }
+        user = data.user;
+      } else {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        user = data.user;
+      }
+      showHome();
+    } catch (error) {
+      setMessage(error.message || 'Could not complete sign-in.');
+      submit.disabled = false;
+    }
+  };
+}
+
+function formatId(id) {
+  const digits = id.replace(/\D/g, '');
+  return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1-$2-$3');
+}
+
+function newRoomId() {
+  const digits = new Uint32Array(9);
+  crypto.getRandomValues(digits);
+  return Array.from(digits, digit => digit % 10).join('');
+}
+
+function showHome() {
+  roomCleanup();
+  roomCleanup = () => {};
+  app.className = 'panel';
+  app.innerHTML = `<div class="call-top">
+      <div><h2 class="gradient-text">📹 ZChat</h2><span class="muted small">Signed in as ${esc(displayName())}</span></div>
+      <span class="spacer"></span><button class="secondary" id="signout">Sign out</button>
+    </div>
+    <p class="muted">Start a video call or join a room with a meeting ID.</p>
+    <div class="room-grid">
+      <section class="room-card">
+        <h3>Join a call</h3>
+        <label for="join-id">Meeting ID</label>
+        <input id="join-id" inputmode="numeric" autocomplete="off" maxlength="11" placeholder="000-000-000">
+        <p id="join-message" class="message" role="status"></p>
+        <button id="join-call" class="full">Join ZChat</button>
+      </section>
+      <section class="room-card">
+        <h3>Start a call</h3>
+        <p class="muted small">Create a private room and share its ID with the people you want to invite.</p>
+        <div id="new-room-id" class="room-id" aria-live="polite"></div>
+        <button id="create-room" class="full">Create a ZChat room</button>
+        <button id="start-room" class="full" style="display:none">Start this room</button>
+      </section>
+    </div>`;
+  document.getElementById('signout').onclick = async () => {
+    roomCleanup();
+    roomCleanup = () => {};
+    const { error } = await sb.auth.signOut();
+    if (error) alert(error.message);
+    else { user = null; showAuth(); }
+  };
+  const joinInput = document.getElementById('join-id');
+  joinInput.oninput = () => {
+    joinInput.value = joinInput.value.replace(/\D/g, '').slice(0, 9).replace(/(\d{3})(\d{3})(\d{3})/, '$1-$2-$3');
+  };
+  document.getElementById('join-call').onclick = () => {
+    const id = joinInput.value.replace(/\D/g, '');
+    const message = document.getElementById('join-message');
+    if (id.length !== 9) {
+      message.textContent = 'Enter a full 9-digit meeting ID.';
+      message.className = 'message error';
+      return;
+    }
+    enterRoom(id, false);
+  };
+  let roomId;
+  document.getElementById('create-room').onclick = () => {
+    roomId = newRoomId();
+    document.getElementById('new-room-id').textContent = formatId(roomId);
+    document.getElementById('start-room').style.display = '';
+    document.getElementById('start-room').textContent = 'Copy ID and start room';
+  };
+  document.getElementById('start-room').onclick = async () => {
+    if (!roomId) return;
+    try {
+      await navigator.clipboard.writeText(formatId(roomId));
+    } catch {
+      // The meeting ID remains visible if clipboard access is unavailable.
+    }
+    enterRoom(roomId, true);
+  };
+}
+
+function enterRoom(roomId, isHost) {
+  const cleanId = roomId.replace(/\D/g, '');
+  if (cleanId.length !== 9) return;
+  connectRoom(cleanId, isHost).catch(error => {
+    roomCleanup();
+    roomCleanup = () => {};
+    app.className = 'panel';
+    app.innerHTML = `<h2 class="gradient-text">Could not join this room</h2>
+      <p class="message error">${esc(error.message || 'An unexpected error occurred.')}</p>
+      <button id="back-home">Back to ZChat</button>`;
+    document.getElementById('back-home').onclick = showHome;
+  });
+}
+
+async function connectRoom(roomId, isHost) {
+  const pcs = new Map();
+  let localStream = null;
+  let channel;
+  let muted = false, cameraOff = false;
+  const myId = user.id;
+  const name = displayName();
+  app.className = 'panel wide';
+  app.innerHTML = `<div class="call-top">
+      <h2 class="gradient-text">📹 ZChat</h2>
+      <span class="muted">ID: <b>${esc(formatId(roomId))}</b></span>
+      <button id="copy-id" class="secondary">Copy ID</button>
+      <span class="spacer"></span>
+      ${isHost ? '<button id="end-room" class="danger">End for everyone</button>' : ''}
+      <button id="leave-room" class="quiet">Leave</button>
+    </div>
+    <div class="call-grid">
+      <section>
+        <div id="videos" class="videos">
+          <div class="tile">
+            <video id="self-video" autoplay muted playsinline></video>
+            <div class="tile-name">${esc(name)} (you)</div>
+            <div class="tile-controls">
+              <button id="mute" aria-label="Mute microphone" title="Mute microphone">🎤</button>
+              <button id="camera" aria-label="Turn off camera" title="Turn off camera">📷</button>
+            </div>
+          </div>
+        </div>
+        <p id="connection-status" class="muted small" role="status">Connecting to the room…</p>
+      </section>
+      <aside class="room-card">
+        <h3>Participants <span id="participant-count">(1)</span></h3>
+        <div id="participants" class="participants muted">${esc(name)} (you)</div>
+        <h3>💬 Chat</h3>
+        <div id="chat" class="chatlog" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" maxlength="300" aria-label="Chat message" placeholder="Message…" autocomplete="off">
+          <button type="submit">Send</button>
+        </form>
+      </aside>
+    </div>`;
+
+  const stopRoom = (endForEveryone = false) => {
+    if (endForEveryone && channel) channel.send({ type: 'broadcast', event: 'zchat-end', payload: {} });
+    localStream?.getTracks().forEach(track => track.stop());
+    pcs.forEach(pc => pc.close());
+    pcs.clear();
+    if (channel) sb.removeChannel(channel);
+    if (roomCleanup === stopRoom) roomCleanup = () => {};
+  };
+  roomCleanup = stopRoom;
+  const leave = (endForEveryone = false) => {
+    stopRoom(endForEveryone);
+    showHome();
+  };
+  document.getElementById('leave-room').onclick = () => leave();
+  document.getElementById('end-room')?.addEventListener('click', () => {
+    if (confirm('End this call for everyone?')) leave(true);
+  });
+  document.getElementById('copy-id').onclick = async event => {
+    try {
+      await navigator.clipboard.writeText(formatId(roomId));
+      event.currentTarget.textContent = 'Copied!';
+    } catch {
+      event.currentTarget.textContent = formatId(roomId);
+    }
+  };
+  document.getElementById('mute').onclick = event => {
+    muted = !muted;
+    localStream?.getAudioTracks().forEach(track => { track.enabled = !muted; });
+    event.currentTarget.textContent = muted ? '🔇' : '🎤';
+  };
+  document.getElementById('camera').onclick = event => {
+    cameraOff = !cameraOff;
+    localStream?.getVideoTracks().forEach(track => { track.enabled = !cameraOff; });
+    event.currentTarget.textContent = cameraOff ? '🚫' : '📷';
+  };
+
+  const addMessage = (from, text) => {
+    const log = document.getElementById('chat');
+    if (!log) return;
+    const line = document.createElement('p');
+    const author = document.createElement('b');
+    author.textContent = from;
+    line.append(author, document.createTextNode(` ${text}`));
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  };
+  document.getElementById('chat-form').onsubmit = event => {
+    event.preventDefault();
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim().slice(0, 300);
+    if (!text || !channel) return;
+    channel.send({ type: 'broadcast', event: 'zchat-msg', payload: { from: name, text } });
+    addMessage(`${name} (you)`, text);
+    input.value = '';
+  };
+
+  const participantList = () => {
+    if (!channel) return;
+    const present = Object.values(channel.presenceState()).flat().map(item => item.name).filter(Boolean);
+    const names = [...new Set([`${name} (you)`, ...present.filter(item => item !== name)])];
+    const participants = document.getElementById('participants');
+    const count = document.getElementById('participant-count');
+    if (participants) participants.textContent = names.join(', ');
+    if (count) count.textContent = `(${names.length})`;
+  };
+  const addTile = (peerId, peerName) => {
+    if (document.getElementById(`tile-${peerId}`)) return;
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.id = `tile-${peerId}`;
+    const video = document.createElement('video');
+    video.id = `video-${peerId}`;
+    video.autoplay = true;
+    video.playsInline = true;
+    const label = document.createElement('div');
+    label.className = 'tile-name';
+    label.textContent = peerName;
+    tile.append(video, label);
+    document.getElementById('videos')?.appendChild(tile);
+  };
+  const removePeer = peerId => {
+    pcs.get(peerId)?.close();
+    pcs.delete(peerId);
+    document.getElementById(`tile-${peerId}`)?.remove();
+  };
+  const addIce = async (pc, candidate) => {
+    if (pc.remoteDescription) await pc.addIceCandidate(candidate);
+    else {
+      pc.pendingCandidates ||= [];
+      pc.pendingCandidates.push(candidate);
+    }
+  };
+  const flushIce = async pc => {
+    for (const candidate of pc.pendingCandidates || []) {
+      await pc.addIceCandidate(candidate);
+    }
+    pc.pendingCandidates = [];
+  };
+  const makePeer = peerId => {
+    if (pcs.has(peerId)) return pcs.get(peerId);
+    const pc = new RTCPeerConnection(ICE);
+    pcs.set(peerId, pc);
+    addTile(peerId, channel.presenceState()[peerId]?.[0]?.name || 'Participant');
+    localStream?.getTracks().forEach(track => pc.addTrack(track, localStream));
+    pc.ontrack = event => {
+      const video = document.getElementById(`video-${peerId}`);
+      if (video) video.srcObject = event.streams[0];
+    };
+    pc.onicecandidate = event => {
+      if (event.candidate) channel.send({
+        type: 'broadcast', event: 'zchat-ice',
+        payload: { to: peerId, from: myId, cand: event.candidate }
+      });
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') removePeer(peerId);
+    };
+    let makingOffer = false;
+    pc.onnegotiationneeded = async () => {
+      try {
+        makingOffer = true;
+        await pc.setLocalDescription();
+        channel.send({
+          type: 'broadcast', event: 'zchat-sdp',
+          payload: { to: peerId, from: myId, name, sdp: pc.localDescription }
+        });
+      } catch (error) {
+        const status = document.getElementById('connection-status');
+        if (status) status.textContent = `Call setup failed: ${error.message}`;
+      } finally {
+        makingOffer = false;
+      }
+    };
+    pc.polite = myId < peerId;
+    pc.handleDescription = async description => {
+      const collision = description.type === 'offer' && (makingOffer || pc.signalingState !== 'stable');
+      if (!pc.polite && collision) return;
+      await pc.setRemoteDescription(description);
+      await flushIce(pc);
+      if (description.type === 'offer') {
+        await pc.setLocalDescription();
+        channel.send({
+          type: 'broadcast', event: 'zchat-sdp',
+          payload: { to: peerId, from: myId, name, sdp: pc.localDescription }
+        });
+      }
+    };
+    return pc;
+  };
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const selfVideo = document.getElementById('self-video');
+    if (selfVideo) selfVideo.srcObject = localStream;
+  } catch (error) {
+    const status = document.getElementById('connection-status');
+    if (status) status.textContent = `Camera or microphone unavailable: ${error.message}`;
+  }
+  if (!app.contains(document.getElementById('self-video'))) {
+    localStream?.getTracks().forEach(track => track.stop());
+    return;
+  }
+
+  channel = sb.channel(`zchat-${roomId}`, {
+    config: { broadcast: { self: false }, presence: { key: myId } }
+  });
+  channel
+    .on('broadcast', { event: 'zchat-sdp' }, async ({ payload }) => {
+      if (payload.to !== myId) return;
+      try {
+        const pc = makePeer(payload.from);
+        await pc.handleDescription(payload.sdp);
+      } catch (error) {
+        const status = document.getElementById('connection-status');
+        if (status) status.textContent = `Call setup failed: ${error.message}`;
+      }
+    })
+    .on('broadcast', { event: 'zchat-ice' }, async ({ payload }) => {
+      if (payload.to !== myId || !pcs.has(payload.from)) return;
+      try {
+        await addIce(pcs.get(payload.from), payload.cand);
+      } catch (error) {
+        const status = document.getElementById('connection-status');
+        if (status) status.textContent = `Network connection failed: ${error.message}`;
+      }
+    })
+    .on('broadcast', { event: 'zchat-msg' }, ({ payload }) => addMessage(payload.from, payload.text))
+    .on('broadcast', { event: 'zchat-end' }, () => {
+      alert('The host ended the call.');
+      leave();
+    })
+    .on('presence', { event: 'sync' }, async () => {
+      participantList();
+      const present = channel.presenceState();
+      for (const [peerId, items] of Object.entries(present)) {
+        if (peerId === myId) continue;
+        const pc = makePeer(peerId);
+        if (pc.signalingState === 'stable' && !pc.pendingLocalDescription) {
+          pc.onnegotiationneeded?.();
+        }
+        const tileName = document.querySelector(`#tile-${CSS.escape(peerId)} .tile-name`);
+        if (tileName && items[0]?.name) tileName.textContent = items[0].name;
+      }
+      for (const peerId of pcs.keys()) {
+        if (!present[peerId]) removePeer(peerId);
+      }
+    })
+    .subscribe(async state => {
+      const status = document.getElementById('connection-status');
+      if (state === 'SUBSCRIBED') {
+        await channel.track({ name });
+        if (status) status.textContent = 'Connected. Waiting for others to join…';
+      } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
+        if (status) status.textContent = `Could not connect to the room (${state}).`;
+      }
+    });
+}
+
+async function start() {
+  if (!window.supabase) {
+    app.innerHTML = '<p class="message error">ZChat could not load its sign-in service. Check your connection and reload.</p>';
+    return;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { storage: window.localStorage, storageKey: 'ztube-auth-zchat' }
+  });
+  const { data, error } = await sb.auth.getSession();
+  if (error) {
+    showAuth('signin', error.message);
+    return;
+  }
+  user = data.session?.user || null;
+  if (user) showHome();
+  else showAuth();
+}
+
+start().catch(error => {
+  app.innerHTML = `<p class="message error">${esc(error.message || 'ZChat could not start.')}</p>`;
+});
+</script>
+</body>
+</html>
