@@ -41,6 +41,19 @@
   .message.success{color:#15803d}
   .room-card{padding:20px;background:#fff;border-radius:18px;box-shadow:0 6px 20px #7873f524}
   .room-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:22px}
+  .plans{margin-top:28px}
+  .plans-heading{margin-bottom:14px}
+  .plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+  .plan-card{position:relative;padding:18px;background:#fff;border:1px solid var(--line);border-radius:16px}
+  .plan-card.current{border:2px solid var(--p2);padding:17px}
+  .plan-card h3{margin:0 0 4px}
+  .plan-time{margin:10px 0;font-size:20px;font-weight:700}
+  .plan-card ul{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:12px}
+  .plan-card li+li{margin-top:5px}
+  .plan-status{display:inline-block;margin-top:10px;color:var(--muted);font-size:12px;font-weight:600}
+  .current-label{position:absolute;top:15px;right:14px;color:var(--p2);font-size:11px;font-weight:700}
+  .plan-note{margin:12px 0 0}
+  .meeting-time{font-size:13px;font-weight:600;color:var(--muted)}
   .room-id{margin:14px 0;font-size:28px;font-weight:700;letter-spacing:4px;text-align:center}
   .call-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
   .call-top h2{margin:0}
@@ -59,16 +72,13 @@
   .chat-form button{flex:none}
   .participants{margin-bottom:14px;font-size:13px;overflow-wrap:anywhere}
   footer{padding:18px 12px 22px;text-align:center;color:var(--muted);font-size:13px}
-  .ztube-logo{font-size:18px;font-weight:700;text-decoration:none;background:linear-gradient(90deg,var(--p1),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .ztube-logo span{font-weight:500}
-  .ztube-logo:hover{opacity:.8}
   @media(max-width:700px){main{padding:18px 12px;align-items:flex-start}.panel{padding:22px 18px}.call-grid{grid-template-columns:1fr}.videos{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.room-id{font-size:24px}}
 </style>
 </head>
 <body>
 <header><a class="brand" href="./ZChat.html">▶ ZChat</a></header>
 <main><div id="app" class="panel"><p class="muted center">Loading ZChat…</p></div></main>
-<footer><a class="ztube-logo" href="https://quran8to24.github.io/ZTube/#/">▶ ZTube <span>Industries</span></a></footer>
+<footer><a href="https://quran8to24.github.io/ZTube/#/">ZTube Industries</a></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -83,6 +93,33 @@ let sb, user, roomCleanup = () => {};
 
 function displayName() {
   return user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'ZChat user';
+}
+
+const PLAN_FEATURES = [
+  { name: 'Free', duration: '60 minutes', minutes: 60, current: true },
+  { name: 'Pro', duration: '120 minutes' },
+  { name: 'Premium', duration: '240 minutes' },
+  { name: 'Unlimited', duration: 'Unlimited' }
+];
+const ACTIVE_PLAN = PLAN_FEATURES[0];
+
+function renderPlans() {
+  return `<section class="plans" aria-labelledby="plans-heading">
+    <h2 id="plans-heading" class="plans-heading">Choose your ZChat plan</h2>
+    <div class="plans-grid">${PLAN_FEATURES.map(plan => `<article class="plan-card${plan.current ? ' current' : ''}">
+      ${plan.current ? '<span class="current-label">YOUR PLAN</span>' : ''}
+      <h3>${plan.name}</h3>
+      <p class="plan-time">${plan.duration}<span class="muted small"> / meeting</span></p>
+      <ul>
+        <li>Video and audio calls</li>
+        <li>Private meeting rooms</li>
+        <li>In-call chat</li>
+        <li>${plan.duration === 'Unlimited' ? 'Unlimited meeting time' : `${plan.duration} per meeting`}</li>
+      </ul>
+      <span class="plan-status">${plan.current ? 'Current plan' : 'Coming soon'}</span>
+    </article>`).join('')}</div>
+    <p class="plan-note muted small">Paid plans will be available when billing is added. No payment is required now.</p>
+  </section>`;
 }
 
 function setMessage(text, kind = 'error') {
@@ -207,7 +244,7 @@ async function verifyRoom(roomId) {
 function showHome() {
   roomCleanup();
   roomCleanup = () => {};
-  app.className = 'panel';
+  app.className = 'panel wide';
   app.innerHTML = `<div class="call-top">
       <div><h2 class="gradient-text">📹 ZChat</h2><span class="muted small">Signed in as ${esc(displayName())}</span></div>
       <span class="spacer"></span><button class="secondary" id="signout">Sign out</button>
@@ -228,7 +265,8 @@ function showHome() {
         <button id="create-room" class="full">Create a ZChat room</button>
         <button id="start-room" class="full" style="display:none">Start this room</button>
       </section>
-    </div>`;
+    </div>
+    ${renderPlans()}`;
   document.getElementById('signout').onclick = async () => {
     roomCleanup();
     roomCleanup = () => {};
@@ -290,12 +328,15 @@ async function connectRoom(roomId, isHost) {
   let localStream = null;
   let channel;
   let muted = false, cameraOff = false;
+  let meetingTimer = null;
+  let meetingEndsAt = null;
   const myId = user.id;
   const name = displayName();
   app.className = 'panel wide';
   app.innerHTML = `<div class="call-top">
       <h2 class="gradient-text">📹 ZChat</h2>
       <span class="muted">ID: <b>${esc(formatId(roomId))}</b></span>
+      <span id="meeting-time" class="meeting-time" role="status">${esc(ACTIVE_PLAN.name)} plan · ${esc(ACTIVE_PLAN.duration)} max</span>
       <button id="copy-id" class="secondary">Copy ID</button>
       <span class="spacer"></span>
       ${isHost ? '<button id="end-room" class="danger">End for everyone</button>' : ''}
@@ -329,6 +370,7 @@ async function connectRoom(roomId, isHost) {
 
   const stopRoom = (endForEveryone = false) => {
     if (endForEveryone && channel) channel.send({ type: 'broadcast', event: 'zchat-end', payload: {} });
+    clearInterval(meetingTimer);
     localStream?.getTracks().forEach(track => track.stop());
     pcs.forEach(pc => pc.close());
     pcs.clear();
@@ -391,6 +433,22 @@ async function connectRoom(roomId, isHost) {
     const count = document.getElementById('participant-count');
     if (participants) participants.textContent = names.join(', ');
     if (count) count.textContent = `(${names.length})`;
+  };
+  const updateMeetingTime = () => {
+    const timeLabel = document.getElementById('meeting-time');
+    if (!meetingEndsAt || !timeLabel) return;
+    const remaining = Math.max(0, meetingEndsAt - Date.now());
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    timeLabel.textContent = `${ACTIVE_PLAN.name} plan · ${minutes}:${String(seconds).padStart(2, '0')} left`;
+    if (remaining === 0) {
+      clearInterval(meetingTimer);
+      if (isHost) leave(true);
+      else {
+        alert('This meeting reached the Free plan time limit.');
+        leave();
+      }
+    }
   };
   const addTile = (peerId, peerName) => {
     if (document.getElementById(`tile-${peerId}`)) return;
@@ -521,6 +579,12 @@ async function connectRoom(roomId, isHost) {
     .on('presence', { event: 'sync' }, async () => {
       participantList();
       const present = channel.presenceState();
+      const host = Object.values(present).flat().find(item => item.role === 'host' && item.meetingEndsAt);
+      if (!isHost && host && !meetingEndsAt) {
+        meetingEndsAt = host.meetingEndsAt;
+        meetingTimer = setInterval(updateMeetingTime, 1000);
+        updateMeetingTime();
+      }
       for (const [peerId, items] of Object.entries(present)) {
         if (peerId === myId) continue;
         const pc = makePeer(peerId);
@@ -537,7 +601,16 @@ async function connectRoom(roomId, isHost) {
     .subscribe(async state => {
       const status = document.getElementById('connection-status');
       if (state === 'SUBSCRIBED') {
-        await channel.track({ name, role: isHost ? 'host' : 'guest' });
+        if (isHost) {
+          meetingEndsAt = Date.now() + ACTIVE_PLAN.minutes * 60 * 1000;
+          meetingTimer = setInterval(updateMeetingTime, 1000);
+          updateMeetingTime();
+        }
+        await channel.track({
+          name,
+          role: isHost ? 'host' : 'guest',
+          ...(isHost ? { meetingEndsAt } : {})
+        });
         if (status) status.textContent = 'Connected. Waiting for others to join…';
       } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
         if (status) status.textContent = `Could not connect to the room (${state}).`;
