@@ -59,13 +59,16 @@
   .chat-form button{flex:none}
   .participants{margin-bottom:14px;font-size:13px;overflow-wrap:anywhere}
   footer{padding:18px 12px 22px;text-align:center;color:var(--muted);font-size:13px}
+  .ztube-logo{font-size:18px;font-weight:700;text-decoration:none;background:linear-gradient(90deg,var(--p1),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ztube-logo span{font-weight:500}
+  .ztube-logo:hover{opacity:.8}
   @media(max-width:700px){main{padding:18px 12px;align-items:flex-start}.panel{padding:22px 18px}.call-grid{grid-template-columns:1fr}.videos{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.room-id{font-size:24px}}
 </style>
 </head>
 <body>
 <header><a class="brand" href="./ZChat.html">▶ ZChat</a></header>
 <main><div id="app" class="panel"><p class="muted center">Loading ZChat…</p></div></main>
-<footer><a href="https://quran8to24.github.io/ZTube/#/">ZTube Industries</a></footer>
+<footer><a class="ztube-logo" href="https://quran8to24.github.io/ZTube/#/">▶ ZTube <span>Industries</span></a></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
