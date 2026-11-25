@@ -65,7 +65,7 @@
 <body>
 <header><a class="brand" href="./ZChat.html">▶ ZChat</a></header>
 <main><div id="app" class="panel"><p class="muted center">Loading ZChat…</p></div></main>
-<footer>ZTube Industries</footer>
+<footer><a href="https://quran8to24.github.io/ZTube/#/">ZTube Industries</a></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -167,6 +167,40 @@ function newRoomId() {
   return Array.from(digits, digit => digit % 10).join('');
 }
 
+async function verifyRoom(roomId) {
+  const channel = sb.channel(`zchat-${roomId}`, { config: { presence: { key: `verify-${user.id}` } } });
+  let timer;
+  try {
+    return await new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (valid, error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (error) reject(error);
+        else resolve(valid);
+      };
+      const checkForHost = () => {
+        const hasHost = Object.values(channel.presenceState()).flat()
+          .some(item => item.role === 'host');
+        if (hasHost) finish(true);
+      };
+      timer = setTimeout(() => finish(false), 5000);
+      channel
+        .on('presence', { event: 'sync' }, checkForHost)
+        .subscribe(state => {
+          if (state === 'SUBSCRIBED') checkForHost();
+          else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED') {
+            finish(false, new Error(`Could not verify the meeting ID (${state}).`));
+          }
+        });
+    });
+  } finally {
+    clearTimeout(timer);
+    await sb.removeChannel(channel);
+  }
+}
+
 function showHome() {
   roomCleanup();
   roomCleanup = () => {};
@@ -246,6 +280,9 @@ function enterRoom(roomId, isHost) {
 }
 
 async function connectRoom(roomId, isHost) {
+  if (!isHost && !(await verifyRoom(roomId))) {
+    throw new Error('Invalid meeting ID. No active call was found for this code.');
+  }
   const pcs = new Map();
   let localStream = null;
   let channel;
@@ -497,7 +534,7 @@ async function connectRoom(roomId, isHost) {
     .subscribe(async state => {
       const status = document.getElementById('connection-status');
       if (state === 'SUBSCRIBED') {
-        await channel.track({ name });
+        await channel.track({ name, role: isHost ? 'host' : 'guest' });
         if (status) status.textContent = 'Connected. Waiting for others to join…';
       } else if (state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') {
         if (status) status.textContent = `Could not connect to the room (${state}).`;
